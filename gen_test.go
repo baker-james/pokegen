@@ -16,7 +16,7 @@ func TestGenNames(t *testing.T) {
 
 	assert.Equal(t, dat, b)
 
-	err = os.WriteFile("./tmp.sav", b, 0644)
+	err = os.WriteFile("./Pokemon Red.sav", b, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -24,7 +24,7 @@ func TestGenNames(t *testing.T) {
 
 
 func TestGenNames2(t *testing.T) {
-	b, err := pokegen.Gen("ABC", "DEF")
+	b, err := pokegen.Gen("AaBbCcDdEe", "DEF")
 	assert.NoError(t, err)
 
 	dat, err := os.ReadFile("./abc-def.sav")
@@ -32,7 +32,7 @@ func TestGenNames2(t *testing.T) {
 
 	assert.Equal(t, dat, b)
 
-	err = os.WriteFile("./tmp.sav", b, 0644)
+	err = os.WriteFile("./Pokemon Red.sav", b, 0644)
 	if err != nil {
 		panic(err)
 	}
