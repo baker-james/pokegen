@@ -3,11 +3,12 @@ package pokegen
 import (
 	"bytes"
 	"fmt"
+	bcd "github.com/johnsonjh/gobcd"
 	"unicode/utf8"
 )
 
 
-func Gen(playerName, rivalName string) ([]byte, error) {
+func Gen(playerName, rivalName string, money int) ([]byte, error) {
 	var bank0 bytes.Buffer
 
 	err := writeStart(&bank0)
@@ -16,7 +17,7 @@ func Gen(playerName, rivalName string) ([]byte, error) {
 	}
 
 	var bank1 bytes.Buffer
-	err = writeMiddle(&bank1, playerName, rivalName)
+	err = writeMiddle(&bank1, playerName, rivalName, money)
 	if err != nil {
 		return nil, fmt.Errorf("middle: %w", err)
 	}
@@ -128,6 +129,16 @@ func writeStart(b *bytes.Buffer) error {
 	return nil
 }
 
+func writeBinaryCodedDecimal(b *checksumBuffer, i int) error {
+	m := bcd.FromUint(uint64(i), 3)
+	_, err := b.Write(m)
+	if err != nil {
+		return fmt.Errorf("failed to write null byte: %w", err)
+	}
+
+	return err
+}
+
 func writeUserInput(b *checksumBuffer, text string, reservedSpace int) error {
 	const terminator = 0x50
 
@@ -197,7 +208,7 @@ func (cb checksumBuffer) Checksum() byte {
 
 
 
-func writeMiddle(b *bytes.Buffer, playerName, rivalName string) error {
+func writeMiddle(b *bytes.Buffer, playerName, rivalName string, money int) error {
 	var err error
 
 	var buf = &checksumBuffer{
@@ -224,16 +235,16 @@ func writeMiddle(b *bytes.Buffer, playerName, rivalName string) error {
 		}
 	}
 
-	for i:=0; i<41; i++ {
+	for i:=0; i<40; i++ {
 		err := buf.WriteByte(0x00)
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	_, err = buf.Write([]byte{
-		0x30, 0x00,
-	})
+
+
+	err = writeBinaryCodedDecimal(buf, money)
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
