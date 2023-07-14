@@ -194,8 +194,8 @@ func (csw *checksumWriter) Write(bytes []byte) (int, error) {
 	return csw.w.Write(bytes)
 }
 
-func (csw checksumWriter) Checksum() byte {
-	return ^csw.sum
+func (csw checksumWriter) WriteChecksum() (int, error) {
+	return csw.w.Write([]byte{^csw.sum})
 }
 
 func writeMiddle(w io.Writer, playerName, rivalName string, money int) error {
@@ -669,10 +669,9 @@ func writeMiddle(w io.Writer, playerName, rivalName string, money int) error {
 		}
 	}
 
-	var checksum = csw.Checksum()
-	_, err = csw.Write([]byte{checksum})
+	_, err = csw.WriteChecksum()
 	if err != nil {
-		return fmt.Errorf("failed to write null byte: %w", err)
+		return fmt.Errorf("failed to write checksum: %w", err)
 	}
 
 	return nil
