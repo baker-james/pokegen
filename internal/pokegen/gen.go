@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	bcd "github.com/johnsonjh/gobcd"
+	"io"
 	"unicode/utf8"
 )
 
-
 func Gen(playerName, rivalName string, money int) ([]byte, error) {
 	var bank0 bytes.Buffer
-
 	err := writeStart(&bank0)
 	if err != nil {
 		return nil, fmt.Errorf("start: %w", err)
@@ -23,7 +22,6 @@ func Gen(playerName, rivalName string, money int) ([]byte, error) {
 	}
 
 	var bankn bytes.Buffer
-
 	err = writeEnd(&bankn)
 	if err != nil {
 		return nil, fmt.Errorf("end: %w", err)
@@ -34,15 +32,15 @@ func Gen(playerName, rivalName string, money int) ([]byte, error) {
 	return all, nil
 }
 
-func writeStart(b *bytes.Buffer) error {
-	for i:=0; i<132; i++ {
-		err := b.WriteByte(0x00)
+func writeStart(w io.Writer) error {
+	for i := 0; i < 132; i++ {
+		_, err := w.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	_, err := b.Write([]byte{
+	_, err := w.Write([]byte{
 		0x03, 0x0C, 0x10, 0x10, 0x20, 0x20,
 		0x20, 0x10, 0x10, 0x08, 0x18, 0x20,
 		0x20, 0x40, 0x48, 0x38, 0x08, 0x10,
@@ -52,32 +50,32 @@ func writeStart(b *bytes.Buffer) error {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<33; i++ {
-		err := b.WriteByte(0x00)
+	for i := 0; i < 33; i++ {
+		_, err := w.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	_, err = b.Write([]byte{
+	_, err = w.Write([]byte{
 		0xC0, 0x30, 0x08, 0x08, 0x04,
 		0x04, 0x04, 0x08, 0x08, 0x10,
 		0x18, 0x04, 0x04, 0x02, 0x12,
-		0x1C,  0x10, 0x08, 0x88, 0x88,
+		0x1C, 0x10, 0x08, 0x88, 0x88,
 		0x44, 0x44, 0x38,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<445; i++ {
-		err := b.WriteByte(0x00)
+	for i := 0; i < 445; i++ {
+		_, err := w.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	_, err = b.Write([]byte{
+	_, err = w.Write([]byte{
 		0x03, 0x03, 0x0C, 0x0C, 0x10, 0x10,
 		0x10, 0x10, 0x20, 0x20, 0x20, 0x20,
 		0x20, 0x20, 0x10, 0x10, 0x10, 0x10,
@@ -91,14 +89,14 @@ func writeStart(b *bytes.Buffer) error {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<66; i++ {
-		err := b.WriteByte(0x00)
+	for i := 0; i < 66; i++ {
+		_, err := w.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	_, err = b.Write([]byte{
+	_, err = w.Write([]byte{
 		0xC0, 0xC0, 0x30, 0x30, 0x08, 0x08,
 		0x08, 0x08, 0x04, 0x04, 0x04, 0x04,
 		0x04, 0x04, 0x08, 0x08, 0x08, 0x08,
@@ -112,15 +110,15 @@ func writeStart(b *bytes.Buffer) error {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<362; i++ {
-		err := b.WriteByte(0x00)
+	for i := 0; i < 362; i++ {
+		_, err := w.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<8448; i++ {
-		err := b.WriteByte(0xFF)
+	for i := 0; i < 8448; i++ {
+		_, err := w.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
@@ -129,7 +127,7 @@ func writeStart(b *bytes.Buffer) error {
 	return nil
 }
 
-func writeBinaryCodedDecimal(b *checksumBuffer, i int) error {
+func writeBinaryCodedDecimal(b *checksumWriter, i int) error {
 	m := bcd.FromUint(uint64(i), 3)
 	_, err := b.Write(m)
 	if err != nil {
@@ -139,10 +137,10 @@ func writeBinaryCodedDecimal(b *checksumBuffer, i int) error {
 	return err
 }
 
-func writeUserInput(b *checksumBuffer, text string, reservedSpace int) error {
+func writeUserInput(w io.Writer, text string, reservedSpace int) error {
 	const terminator = 0x50
 
-	charConverter := map[rune]byte {
+	charConverter := map[rune]byte{
 		'A': 0x80, 'B': 0x81, 'C': 0x82, 'D': 0x83, 'E': 0x84, 'F': 0x85,
 		'G': 0x86, 'H': 0x87, 'I': 0x88, 'J': 0x89, 'K': 0x8A, 'L': 0x8B,
 		'M': 0x8C, 'N': 0x8D, 'O': 0x8E, 'P': 0x8F, 'Q': 0x90, 'R': 0x91,
@@ -165,97 +163,87 @@ func writeUserInput(b *checksumBuffer, text string, reservedSpace int) error {
 	}
 
 	for _, r := range text {
-		char, present := charConverter[r];
+		char, present := charConverter[r]
 		if !present {
 			return fmt.Errorf("character %q is not available in the character set", string(r))
 		}
 
-		b.WriteByte(char)
+		w.Write([]byte{char})
 	}
 
-	b.WriteByte(terminator)
+	w.Write([]byte{terminator})
 
 	unusedSpace := reservedSpace - utf8.RuneCount([]byte(text))
 
-	for i:=0; i<unusedSpace; i++ {
-		b.WriteByte(0x00)
+	for i := 0; i < unusedSpace; i++ {
+		w.Write([]byte{0x00})
 	}
 
 	return nil
 }
 
-type checksumBuffer struct {
-	buffer *bytes.Buffer
+type checksumWriter struct {
+	w   io.Writer
 	sum byte
 }
 
-func (cb *checksumBuffer) WriteByte(b byte) error {
-	cb.sum += b
-	return cb.buffer.WriteByte(b)
-}
-
-
-func (cb *checksumBuffer) Write(bytes []byte) (int, error) {
+func (csw *checksumWriter) Write(bytes []byte) (int, error) {
 	for _, b := range bytes {
-		cb.sum += b
+		csw.sum += b
 	}
-	return cb.buffer.Write(bytes)
+	return csw.w.Write(bytes)
 }
 
-func (cb checksumBuffer) Checksum() byte {
-	return ^cb.sum
+func (csw checksumWriter) Checksum() byte {
+	return ^csw.sum
 }
 
-
-
-func writeMiddle(b *bytes.Buffer, playerName, rivalName string, money int) error {
+func writeMiddle(w io.Writer, playerName, rivalName string, money int) error {
 	var err error
 
-	var buf = &checksumBuffer{
-		buffer: b,
+	var csw = &checksumWriter{
+		w: w,
 	}
 
 	const playerNameSpace = 10
-	err = writeUserInput(buf, playerName, playerNameSpace)
+	err = writeUserInput(csw, playerName, playerNameSpace)
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<39; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 39; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<40; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 40; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-
-	err = writeBinaryCodedDecimal(buf, money)
+	err = writeBinaryCodedDecimal(csw, money)
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
 	const rivalNameSpace = 10
-	err = writeUserInput(buf, rivalName, rivalNameSpace)
+	err = writeUserInput(csw, rivalName, rivalNameSpace)
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	_, err = buf.Write([]byte{
+	_, err = csw.Write([]byte{
 		0x03, 0x00, 0x00, 0x01,
 	})
 	if err != nil {
@@ -263,12 +251,12 @@ func writeMiddle(b *bytes.Buffer, playerName, rivalName string, money int) error
 	}
 
 	var playerID = []byte{0xC0, 0xB2}
-	_, err = buf.Write(playerID)
+	_, err = csw.Write(playerID)
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	_, err = buf.Write([]byte{
+	_, err = csw.Write([]byte{
 
 		0xBA, 0x02,
 		0x00, 0x26, 0x12, 0xC7, 0x06, 0x03, 0x00,
@@ -284,14 +272,14 @@ func writeMiddle(b *bytes.Buffer, playerName, rivalName string, money int) error
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<20; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 20; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	_, err = buf.Write([]byte{
+	_, err = csw.Write([]byte{
 		0x00, 0xD0, 0x40, 0x00, 0x00,
 		0x0A, 0x01, 0x01, 0x07, 0x02,
 		0x25, 0x00,
@@ -300,28 +288,28 @@ func writeMiddle(b *bytes.Buffer, playerName, rivalName string, money int) error
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<123; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 123; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<244; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 244; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	_, err = buf.Write([]byte{
+	_, err = csw.Write([]byte{
 		0x08, 0x08, 0x00, 0x98, 0x00, 0x08, 0x00,
 		0x19, 0x70, 0x52, 0xE0, 0x4D, 0x49, 0x17,
 		0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00,
@@ -331,15 +319,14 @@ func writeMiddle(b *bytes.Buffer, playerName, rivalName string, money int) error
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<102; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 102; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	_, err = buf.Write([]byte{
+	_, err = csw.Write([]byte{
 		0xA5, 0x00, 0x7E, 0x01, 0x0C, 0x41, 0x02, 0x00, 0x10,
 		0x10, 0x00, 0x00, 0x0C, 0x00, 0x02, 0x00, 0x80, 0x01,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40,
@@ -350,52 +337,50 @@ func writeMiddle(b *bytes.Buffer, playerName, rivalName string, money int) error
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<60; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 60; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0x01)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0x01})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<270; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 270; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<22; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 22; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0x01)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0x01})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<785; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 785; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
@@ -404,320 +389,288 @@ func writeMiddle(b *bytes.Buffer, playerName, rivalName string, money int) error
 	const seconds = 0x07
 	const frame = 0x05
 
-	_, err = buf.Write([]byte{
+	_, err = csw.Write([]byte{
 		seconds, frame,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<58; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 58; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	_, err = buf.Write([]byte{
+	_, err = csw.Write([]byte{
 		0x01, 0x00, 0xFF, 0x00, 0x3C, 0x00, 0x40, 0x00, 0x00, 0x04, 0x40, 0x40,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	for i:=0; i<6; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 6; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<15; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 15; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<26; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 26; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	_, err = buf.Write([]byte{
+	_, err = csw.Write([]byte{
 		0x01, 0x01,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-
-	for i:=0; i<242; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 242; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<403; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 403; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-	for i:=0; i<1; i++ {
-		err := buf.WriteByte(0xFF)
+	for i := 0; i < 1; i++ {
+		_, err := csw.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	for i:=0; i<1121; i++ {
-		err := buf.WriteByte(0x00)
+	for i := 0; i < 1121; i++ {
+		_, err := csw.Write([]byte{0x00})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
 	}
 
-
-	var checksum = buf.Checksum()
-	err = buf.WriteByte(checksum)
+	var checksum = csw.Checksum()
+	_, err = csw.Write([]byte{checksum})
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
@@ -725,9 +678,9 @@ func writeMiddle(b *bytes.Buffer, playerName, rivalName string, money int) error
 	return nil
 }
 
-func writeEnd(b *bytes.Buffer) error {
-	for i:=0; i<19164; i++ {
-		err := b.WriteByte(0xFF)
+func writeEnd(w io.Writer) error {
+	for i := 0; i < 19164; i++ {
+		_, err := w.Write([]byte{0xFF})
 		if err != nil {
 			return fmt.Errorf("failed to write null byte: %w", err)
 		}
