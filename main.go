@@ -12,7 +12,9 @@ func main() {
 	http.HandleFunc("/gen", genFile)
 	http.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		if _, err := w.Write([]byte("OK")); err != nil {
+			panic(fmt.Errorf("failed to write OK to /health"))
+		}
 	})
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
@@ -40,6 +42,4 @@ func genFile(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-
-	return
 }
