@@ -3,12 +3,11 @@ package pokegen
 import (
 	"bytes"
 	"fmt"
-	bcd "github.com/johnsonjh/gobcd"
 	"io"
-	"unicode/utf8"
+	"pokegen/internal/util"
 )
 
-func Gen(playerName, rivalName string, money int) ([]byte, error) {
+func Gen(playerName, rivalName string, money uint64) ([]byte, error) {
 	var bank0 bytes.Buffer
 	err := writeStart(&bank0)
 	if err != nil {
@@ -127,61 +126,6 @@ func writeStart(w io.Writer) error {
 	return nil
 }
 
-func writeBinaryCodedDecimal(b *checksumWriter, i int) error {
-	m := bcd.FromUint(uint64(i), 3)
-	_, err := b.Write(m)
-	if err != nil {
-		return fmt.Errorf("failed to write null byte: %w", err)
-	}
-
-	return err
-}
-
-func writeUserInput(w io.Writer, text string, reservedSpace int) error {
-	const terminator = 0x50
-
-	charConverter := map[rune]byte{
-		'A': 0x80, 'B': 0x81, 'C': 0x82, 'D': 0x83, 'E': 0x84, 'F': 0x85,
-		'G': 0x86, 'H': 0x87, 'I': 0x88, 'J': 0x89, 'K': 0x8A, 'L': 0x8B,
-		'M': 0x8C, 'N': 0x8D, 'O': 0x8E, 'P': 0x8F, 'Q': 0x90, 'R': 0x91,
-		'S': 0x92, 'T': 0x93, 'U': 0x94, 'V': 0x95, 'W': 0x96, 'X': 0x97,
-		'Y': 0x98, 'Z': 0x99, '(': 0x9A, ')': 0x9B, ':': 0x9C, ';': 0x9D,
-		'[': 0x9E, ']': 0x9F,
-
-		'a': 0xA0, 'b': 0xA1, 'c': 0xA2, 'd': 0xA3, 'e': 0xA4, 'f': 0xA5,
-		'g': 0xA6, 'h': 0xA7, 'i': 0xA8, 'j': 0xA9, 'k': 0xAA, 'l': 0xAB,
-		'm': 0xAC, 'n': 0xAD, 'o': 0xAE, 'p': 0xAF, 'q': 0xB0, 'r': 0xB1,
-		's': 0xB2, 't': 0xB3, 'u': 0xB4, 'v': 0xB5, 'w': 0xB6, 'x': 0xB7,
-		'y': 0xB8, 'z': 0xB9,
-
-		//'PK': 0x??, 'MN': 0x??,
-
-		'-': 0xE3,
-		'?': 0xE6, '!': 0xE7, '.': 0xE8,
-		'♂': 0xEF,
-		'/': 0xF3, ',': 0xF4, '♀': 0xF5,
-	}
-
-	for _, r := range text {
-		char, present := charConverter[r]
-		if !present {
-			return fmt.Errorf("character %q is not available in the character set", string(r))
-		}
-
-		w.Write([]byte{char})
-	}
-
-	w.Write([]byte{terminator})
-
-	unusedSpace := reservedSpace - utf8.RuneCount([]byte(text))
-
-	for i := 0; i < unusedSpace; i++ {
-		w.Write([]byte{0x00})
-	}
-
-	return nil
-}
-
 type checksumWriter struct {
 	w   io.Writer
 	sum byte
@@ -198,15 +142,15 @@ func (csw checksumWriter) WriteChecksum() (int, error) {
 	return csw.w.Write([]byte{^csw.sum})
 }
 
-func writeMiddle(w io.Writer, playerName, rivalName string, money int) error {
+func writeMiddle(w io.Writer, playerName, rivalName string, money uint64) error {
 	var err error
 
 	var csw = &checksumWriter{
 		w: w,
 	}
 
-	const playerNameSpace = 10
-	err = writeUserInput(csw, playerName, playerNameSpace)
+	const playerNameSpace = 11
+	err = util.WriteText(csw, playerName, playerNameSpace)
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
@@ -232,13 +176,14 @@ func writeMiddle(w io.Writer, playerName, rivalName string, money int) error {
 		}
 	}
 
-	err = writeBinaryCodedDecimal(csw, money)
+	const moneySpace = 3
+	err = util.WriteBinaryCodedDecimal(csw, money, moneySpace)
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
 
-	const rivalNameSpace = 10
-	err = writeUserInput(csw, rivalName, rivalNameSpace)
+	const rivalNameSpace = 11
+	err = util.WriteText(csw, rivalName, rivalNameSpace)
 	if err != nil {
 		return fmt.Errorf("failed to write null byte: %w", err)
 	}
