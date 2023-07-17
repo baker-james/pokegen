@@ -63,7 +63,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestGen(t *testing.T) {
+func TestIntegrationHappy(t *testing.T) {
 	assert := assert.New(t)
 	req, err := http.NewRequest(
 		http.MethodGet,
