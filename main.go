@@ -31,15 +31,11 @@ func genFile(w http.ResponseWriter, req *http.Request) {
 		panic(fmt.Errorf("unable to decode: %w", err))
 	}
 
-	b, err := pokegen.Gen(r.PlayerName, r.RivalName, 3000)
+	_, err = pokegen.Gen(w, r.PlayerName, r.RivalName, 3000)
 	if err != nil {
 		panic(err)
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/octet-stream")
-	_, err = w.Write(b)
-	if err != nil {
-		panic(err)
-	}
 }

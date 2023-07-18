@@ -1,34 +1,28 @@
 package pokegen
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"pokegen/internal/util"
 )
 
-func Gen(playerName, rivalName string, money uint64) ([]byte, error) {
-	var bank0 bytes.Buffer
-	err := writeStart(&bank0)
+func Gen(w io.Writer, playerName, rivalName string, money uint64) ([]byte, error) {
+	err := writeStart(w)
 	if err != nil {
 		return nil, fmt.Errorf("start: %w", err)
 	}
 
-	var bank1 bytes.Buffer
-	err = writeMiddle(&bank1, playerName, rivalName, money)
+	err = writeMiddle(w, playerName, rivalName, money)
 	if err != nil {
 		return nil, fmt.Errorf("middle: %w", err)
 	}
 
-	var bankn bytes.Buffer
-	err = writeEnd(&bankn)
+	err = writeEnd(w)
 	if err != nil {
 		return nil, fmt.Errorf("end: %w", err)
 	}
 
-	all := append(bank0.Bytes(), append(bank1.Bytes(), bankn.Bytes()...)...)
-
-	return all, nil
+	return nil, nil
 }
 
 func writeStart(w io.Writer) error {
