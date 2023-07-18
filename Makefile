@@ -1,15 +1,15 @@
 test:
 	make lint
-	make unit_test
-	make integration_test
+	make unit
+	make integration
 
 build:
 	docker build -t pokegen:latest .
 
-integration_test: build
+integration: build
 	go test --tags=integration
 
-unit_test:
+unit:
 	go test -v ./...
 
 lint:
