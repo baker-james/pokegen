@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -31,11 +32,15 @@ func genFile(w http.ResponseWriter, req *http.Request) {
 		panic(fmt.Errorf("unable to decode: %w", err))
 	}
 
-	_, err = pokegen.Gen(w, r.PlayerName, r.RivalName, 3000)
+	data := new(bytes.Buffer)
+	_, err = pokegen.Gen(data, r.PlayerName, r.RivalName, 3000)
 	if err != nil {
-		panic(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/octet-stream")
+	if _, err = w.Write(data.Bytes()); err != nil {
+		panic(err)
+	}
 }
