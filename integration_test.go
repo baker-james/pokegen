@@ -106,7 +106,56 @@ func TestIntegration_AcceptPlayerAndRivalNames(t *testing.T) {
 	assert.Equal([]byte{0xC2}, body[csOffset:csOffset+csSize], "checksum is incorrect")
 }
 
-func TestIntegration_UseDefaultsWithEmptyBody(t *testing.T) {
+func TestIntegration_AcceptMoney(t *testing.T) {
+	assert := assert.New(t)
+	req, err := http.NewRequest(
+		http.MethodGet,
+		fmt.Sprintf("http://localhost:%s/gen", pokegen.GetPort("8080/tcp")),
+		strings.NewReader(`{"money": 4000}`),
+	)
+	assert.NoError(err)
+
+	resp, err := http.DefaultClient.Do(req)
+	assert.NoError(err)
+	assert.Equal(http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	assert.NoError(err)
+
+	assert.Len(body, 32768)
+
+	defaultPlayerName := []byte{0x91, 0x84, 0x83}
+	// pn = player name
+	pnOffset, pnSize := 0x2598, 0xB
+	assert.Equal(
+		// "RED" + terminator + padding
+		append(defaultPlayerName, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
+		body[pnOffset:pnOffset+pnSize],
+		"player name is incorrect",
+	)
+
+	defaultRivalName := []byte{0x81, 0x8B, 0x94, 0x84}
+	// rn = rival name
+	rnOffset, rnSize := 0x25F6, 0xB
+	assert.Equal(
+		// "Gary" + terminator + padding
+		append(defaultRivalName, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
+		body[rnOffset:rnOffset+rnSize],
+		"rival name is incorrect",
+	)
+
+	moneyOffset, moneySize := 0x25F3, 0x3
+	assert.Equal(
+		[]byte{0x00, 0x40, 0x00},
+		body[moneyOffset:moneyOffset+moneySize],
+	)
+
+	// cs = checksum
+	csOffset, csSize := 0x3523, 0x1
+	assert.Equal([]byte{0x5D}, body[csOffset:csOffset+csSize], "checksum is incorrect")
+}
+
+func TestIntegration_EmptyBody(t *testing.T) {
 	assert := assert.New(t)
 	req, err := http.NewRequest(
 		http.MethodGet,
@@ -124,20 +173,22 @@ func TestIntegration_UseDefaultsWithEmptyBody(t *testing.T) {
 
 	assert.Len(body, 32768)
 
+	defaultPlayerName := []byte{0x91, 0x84, 0x83}
 	// pn = player name
 	pnOffset, pnSize := 0x2598, 0xB
 	assert.Equal(
 		// "RED" + terminator + padding
-		[]byte{0x91, 0x84, 0x83, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		append(defaultPlayerName, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
 		body[pnOffset:pnOffset+pnSize],
 		"player name is incorrect",
 	)
 
+	defaultRivalName := []byte{0x81, 0x8B, 0x94, 0x84}
 	// rn = rival name
 	rnOffset, rnSize := 0x25F6, 0xB
 	assert.Equal(
 		// "Gary" + terminator + padding
-		[]byte{0x81, 0x8B, 0x94, 0x84, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		append(defaultRivalName, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
 		body[rnOffset:rnOffset+rnSize],
 		"rival name is incorrect",
 	)
