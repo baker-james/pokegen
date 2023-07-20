@@ -6,6 +6,9 @@ test:
 build:
 	docker build -t pokegen:latest .
 
+run: build
+	docker run -p 8080:8080 pokegen:latest
+
 integration: build
 	go test --tags=integration
 
