@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"pokegen/internal/pokegen"
@@ -21,19 +23,33 @@ func main() {
 }
 
 func genFile(w http.ResponseWriter, req *http.Request) {
-	type reqSchema struct {
+	type schema struct {
 		PlayerName string `json:"player_name"`
 		RivalName  string `json:"rival_name"`
 	}
-	var r reqSchema
 
-	err := json.NewDecoder(req.Body).Decode(&r)
-	if err != nil {
-		panic(fmt.Errorf("unable to decode: %w", err))
+	defaultBody := schema{
+		PlayerName: "RED",
+		RivalName:  "BLUE",
+	}
+
+	var reqBody schema
+
+	err := json.NewDecoder(req.Body).Decode(&reqBody)
+	if err == io.EOF {
+		reqBody = defaultBody
+	} else if err != nil {
+		var syntaxErr *json.SyntaxError
+		if errors.As(err, &syntaxErr) {
+			http.Error(w, fmt.Sprintf("syntax error at byte offset %d", syntaxErr.Offset), http.StatusBadRequest)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	data := new(bytes.Buffer)
-	_, err = pokegen.Gen(data, r.PlayerName, r.RivalName, 3000)
+	_, err = pokegen.Gen(data, reqBody.PlayerName, reqBody.RivalName, 3000)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
