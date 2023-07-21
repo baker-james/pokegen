@@ -1,5 +1,5 @@
 name: PR Check
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+run-name: Checking PR ${{ github.event.number }} created by ${{ github.actor }}
 on: [push, pull_request]
 jobs:
   Check-PR:
