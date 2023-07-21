@@ -1,6 +1,6 @@
 name: PR Check
 run-name: Check PR by ${{ github.actor }} at hash ${{ github.sha }}
-on: [push, pull_request]
+on: [pull_request]
 jobs:
   Check-PR:
     runs-on: ubuntu-latest
