@@ -4,13 +4,18 @@ test:
 	make integration
 
 build:
-	docker build -t pokegen:latest .
+	docker build -t pokegen .
 
-run: build
-	docker run -p 8080:8080 pokegen:latest
+start:
+	docker-compose up --build -d
 
-integration: build
+stop:
+	docker-compose down
+
+integration:
+	make start
 	go test --tags=integration
+	make stop
 
 unit:
 	go test -v ./...

@@ -4,38 +4,20 @@ package main_test
 
 import (
 	"fmt"
-	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
-var pokegen *dockertest.Resource
-
-func TestMain(m *testing.M) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		log.Fatalf("Could not construct pool: %s", err)
-	}
-
-	err = pool.Client.Ping()
-	if err != nil {
-		log.Fatalf("Could not connect to Docker: %s", err)
-	}
-
-	pokegen, err = pool.Run("pokegen", "latest", nil)
-	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
-	}
-
-	if err := pool.Retry(func() error {
+func healthCheckCondition() bool {
+	performHealthCheck := func() error {
 		req, err := http.NewRequest(
 			http.MethodGet,
-			fmt.Sprintf("http://localhost:%s/health", pokegen.GetPort("8080/tcp")),
+			"http://localhost:8080/health",
 			nil,
 		)
 		if err != nil {
@@ -52,24 +34,28 @@ func TestMain(m *testing.M) {
 		}
 
 		return nil
-	}); err != nil {
-		log.Fatalf("Could not get healthy instance: %s", err)
 	}
 
+	if err := performHealthCheck(); err != nil {
+		fmt.Println("health check failed:", err)
+		return false
+	}
+
+	return true
+}
+
+func TestMain(m *testing.M) {
 	code := m.Run()
-
-	if err := pool.Purge(pokegen); err != nil {
-		log.Fatalf("Could not purge resource: %s", err)
-	}
-
 	os.Exit(code)
 }
 
 func TestIntegration_AcceptPlayerAndRivalNames(t *testing.T) {
 	assert := assert.New(t)
+	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
+
 	req, err := http.NewRequest(
 		http.MethodGet,
-		fmt.Sprintf("http://localhost:%s/gen", pokegen.GetPort("8080/tcp")),
+		"http://localhost:8080/gen",
 		strings.NewReader(`{"player_name": "Red", "rival_name": "Gary"}`),
 	)
 	assert.NoError(err)
@@ -108,9 +94,11 @@ func TestIntegration_AcceptPlayerAndRivalNames(t *testing.T) {
 
 func TestIntegration_AcceptMoney(t *testing.T) {
 	assert := assert.New(t)
+	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
+
 	req, err := http.NewRequest(
 		http.MethodGet,
-		fmt.Sprintf("http://localhost:%s/gen", pokegen.GetPort("8080/tcp")),
+		"http://localhost:8080/gen",
 		strings.NewReader(`{"money": 4000}`),
 	)
 	assert.NoError(err)
@@ -157,9 +145,11 @@ func TestIntegration_AcceptMoney(t *testing.T) {
 
 func TestIntegration_EmptyBody(t *testing.T) {
 	assert := assert.New(t)
+	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
+
 	req, err := http.NewRequest(
 		http.MethodGet,
-		fmt.Sprintf("http://localhost:%s/gen", pokegen.GetPort("8080/tcp")),
+		"http://localhost:8080/gen",
 		strings.NewReader(``),
 	)
 	assert.NoError(err)
@@ -200,9 +190,11 @@ func TestIntegration_EmptyBody(t *testing.T) {
 
 func TestIntegration_InvalidBody(t *testing.T) {
 	assert := assert.New(t)
+	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
+
 	req, err := http.NewRequest(
 		http.MethodGet,
-		fmt.Sprintf("http://localhost:%s/gen", pokegen.GetPort("8080/tcp")),
+		"http://localhost:8080/gen",
 		strings.NewReader(`{this is invalid json}`),
 	)
 	assert.NoError(err)
