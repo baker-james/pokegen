@@ -12,7 +12,7 @@ var ErrReservedSpaceInsufficient = fmt.Errorf("insufficient reserved space")
 // WriteText writes text to the writer using the Gen 1 US English character set.
 // Once text is written, a terminator byte 0x50 is written.
 // Additional padding of 0x00 bytes is written to ensure the entire reserved space is utilised.
-// Should the reserved space be insufficient to write the text and terminator, an InsufficientReservedSpaceError error is returned.
+// Should the reserved space be insufficient to write the text and terminator, an ErrReservedSpaceInsufficient error is returned.
 func WriteText(w io.Writer, text string, reservedSpace int) error {
 	usedSpace := utf8.RuneCount([]byte(text)) + 1 // +1 for terminator
 	unusedSpace := reservedSpace - usedSpace
