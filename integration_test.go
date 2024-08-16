@@ -13,6 +13,17 @@ import (
 	"time"
 )
 
+const (
+	playerNameStart = 0x2598
+	playerNameEnd   = 0x25A3
+
+	rivalNameStart = 0x25F6
+	rivalNameEnd   = 0x2601
+
+	checksumStart = 0x3523
+	checksumEnd   = 0x3524
+)
+
 func healthCheckCondition() bool {
 	performHealthCheck := func() error {
 		req, err := http.NewRequest(
@@ -69,27 +80,21 @@ func TestIntegration_AcceptPlayerAndRivalNames(t *testing.T) {
 
 	assert.Len(body, 32768)
 
-	// pn = player name
-	pnOffset, pnSize := 0x2598, 0xB
 	assert.Equal(
 		// "Red" + terminator + padding
 		[]byte{0x91, 0xA4, 0xA3, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		body[pnOffset:pnOffset+pnSize],
+		body[playerNameStart:playerNameEnd],
 		"player name is incorrect",
 	)
 
-	// rn = rival name
-	rnOffset, rnSize := 0x25F6, 0xB
 	assert.Equal(
 		// "Gary" + terminator + padding
 		[]byte{0x86, 0xA0, 0xB1, 0xB8, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		body[rnOffset:rnOffset+rnSize],
+		body[rivalNameStart:rivalNameEnd],
 		"rival name is incorrect",
 	)
 
-	// cs = checksum
-	csOffset, csSize := 0x3523, 0x1
-	assert.Equal([]byte{0xC2}, body[csOffset:csOffset+csSize], "checksum is incorrect")
+	assert.Equal([]byte{0xC2}, body[checksumStart:checksumEnd], "checksum is incorrect")
 }
 
 func TestIntegration_AcceptMoney(t *testing.T) {
@@ -113,22 +118,18 @@ func TestIntegration_AcceptMoney(t *testing.T) {
 	assert.Len(body, 32768)
 
 	defaultPlayerName := []byte{0x91, 0x84, 0x83}
-	// pn = player name
-	pnOffset, pnSize := 0x2598, 0xB
 	assert.Equal(
 		// "RED" + terminator + padding
 		append(defaultPlayerName, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
-		body[pnOffset:pnOffset+pnSize],
+		body[playerNameStart:playerNameEnd],
 		"player name is incorrect",
 	)
 
 	defaultRivalName := []byte{0x81, 0x8B, 0x94, 0x84}
-	// rn = rival name
-	rnOffset, rnSize := 0x25F6, 0xB
 	assert.Equal(
 		// "Gary" + terminator + padding
 		append(defaultRivalName, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
-		body[rnOffset:rnOffset+rnSize],
+		body[rivalNameStart:rivalNameEnd],
 		"rival name is incorrect",
 	)
 
@@ -138,9 +139,7 @@ func TestIntegration_AcceptMoney(t *testing.T) {
 		body[moneyOffset:moneyOffset+moneySize],
 	)
 
-	// cs = checksum
-	csOffset, csSize := 0x3523, 0x1
-	assert.Equal([]byte{0x5D}, body[csOffset:csOffset+csSize], "checksum is incorrect")
+	assert.Equal([]byte{0x5D}, body[checksumStart:checksumEnd], "checksum is incorrect")
 }
 
 func TestIntegration_EmptyBody(t *testing.T) {
@@ -164,28 +163,22 @@ func TestIntegration_EmptyBody(t *testing.T) {
 	assert.Len(body, 32768)
 
 	defaultPlayerName := []byte{0x91, 0x84, 0x83}
-	// pn = player name
-	pnOffset, pnSize := 0x2598, 0xB
 	assert.Equal(
 		// "RED" + terminator + padding
 		append(defaultPlayerName, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
-		body[pnOffset:pnOffset+pnSize],
+		body[playerNameStart:playerNameEnd],
 		"player name is incorrect",
 	)
 
 	defaultRivalName := []byte{0x81, 0x8B, 0x94, 0x84}
-	// rn = rival name
-	rnOffset, rnSize := 0x25F6, 0xB
 	assert.Equal(
 		// "Gary" + terminator + padding
 		append(defaultRivalName, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
-		body[rnOffset:rnOffset+rnSize],
+		body[rivalNameStart:rivalNameEnd],
 		"rival name is incorrect",
 	)
 
-	// cs = checksum
-	csOffset, csSize := 0x3523, 0x1
-	assert.Equal([]byte{0x6D}, body[csOffset:csOffset+csSize], "checksum is incorrect")
+	assert.Equal([]byte{0x6D}, body[checksumStart:checksumEnd], "checksum is incorrect")
 }
 
 func TestIntegration_InvalidBody(t *testing.T) {
