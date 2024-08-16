@@ -7,10 +7,10 @@ build:
 	docker build -t pokegen .
 
 start:
-	docker-compose up --build -d
+	docker compose up --build -d
 
 stop:
-	docker-compose down
+	docker compose down
 
 integration:
 	make start
