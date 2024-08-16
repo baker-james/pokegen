@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/gen", genFile)
-	http.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
+	http.HandleFunc("POST /gen", genFile)
+	http.HandleFunc("GET /health", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte("OK")); err != nil {
 			panic(fmt.Errorf("failed to write OK to /health"))

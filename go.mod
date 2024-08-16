@@ -1,6 +1,6 @@
 module pokegen
 
-go 1.19
+go 1.22
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect

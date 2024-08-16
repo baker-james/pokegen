@@ -65,7 +65,7 @@ func TestIntegration_AcceptPlayerAndRivalNames(t *testing.T) {
 	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
 
 	req, err := http.NewRequest(
-		http.MethodGet,
+		http.MethodPost,
 		"http://localhost:8080/gen",
 		strings.NewReader(`{"player_name": "Red", "rival_name": "Gary"}`),
 	)
@@ -102,7 +102,7 @@ func TestIntegration_AcceptMoney(t *testing.T) {
 	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
 
 	req, err := http.NewRequest(
-		http.MethodGet,
+		http.MethodPost,
 		"http://localhost:8080/gen",
 		strings.NewReader(`{"money": 4000}`),
 	)
@@ -147,7 +147,7 @@ func TestIntegration_EmptyBody(t *testing.T) {
 	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
 
 	req, err := http.NewRequest(
-		http.MethodGet,
+		http.MethodPost,
 		"http://localhost:8080/gen",
 		strings.NewReader(``),
 	)
@@ -186,7 +186,7 @@ func TestIntegration_InvalidBody(t *testing.T) {
 	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
 
 	req, err := http.NewRequest(
-		http.MethodGet,
+		http.MethodPost,
 		"http://localhost:8080/gen",
 		strings.NewReader(`{this is invalid json}`),
 	)
@@ -199,4 +199,33 @@ func TestIntegration_InvalidBody(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	assert.NoError(err)
 	assert.Equal("syntax error at byte offset 2\n", string(body))
+}
+
+func TestIntegration_InvalidMethods(t *testing.T) {
+	assert := assert.New(t)
+	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
+
+	invalidMethods := []string{
+		http.MethodGet,
+		http.MethodHead,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+		http.MethodConnect,
+		http.MethodOptions,
+		http.MethodTrace,
+	}
+
+	for _, method := range invalidMethods {
+		req, err := http.NewRequest(
+			method,
+			"http://localhost:8080/gen",
+			strings.NewReader(`{"money": 4000}`),
+		)
+		assert.NoError(err)
+
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(err)
+		assert.Equal(http.StatusMethodNotAllowed, resp.StatusCode)
+	}
 }
