@@ -36,6 +36,11 @@ func genFile(w http.ResponseWriter, req *http.Request) {
 		Money:      3000,
 	}
 
+	if req.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "Content-Type is unsupported", http.StatusUnsupportedMediaType)
+		return
+	}
+
 	err := json.NewDecoder(req.Body).Decode(&reqBody)
 	if err != nil && err != io.EOF {
 		var syntaxErr *json.SyntaxError

@@ -71,6 +71,7 @@ func TestIntegration_AcceptPlayerAndRivalNames(t *testing.T) {
 	)
 	assert.NoError(err)
 
+	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	assert.NoError(err)
 	assert.Equal(http.StatusOK, resp.StatusCode)
@@ -108,6 +109,7 @@ func TestIntegration_AcceptMoney(t *testing.T) {
 	)
 	assert.NoError(err)
 
+	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	assert.NoError(err)
 	assert.Equal(http.StatusOK, resp.StatusCode)
@@ -153,6 +155,7 @@ func TestIntegration_EmptyBody(t *testing.T) {
 	)
 	assert.NoError(err)
 
+	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	assert.NoError(err)
 	assert.Equal(http.StatusOK, resp.StatusCode)
@@ -192,6 +195,7 @@ func TestIntegration_InvalidBody(t *testing.T) {
 	)
 	assert.NoError(err)
 
+	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	assert.NoError(err)
 	assert.Equal(http.StatusBadRequest, resp.StatusCode)
@@ -224,8 +228,43 @@ func TestIntegration_InvalidMethods(t *testing.T) {
 		)
 		assert.NoError(err)
 
+		req.Header.Set("Content-Type", "application/json")
 		resp, err := http.DefaultClient.Do(req)
 		assert.NoError(err)
 		assert.Equal(http.StatusMethodNotAllowed, resp.StatusCode)
 	}
+}
+
+func TestIntegration_UnsupportedContentType(t *testing.T) {
+	assert := assert.New(t)
+	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"http://localhost:8080/gen",
+		strings.NewReader(`{}`),
+	)
+	assert.NoError(err)
+
+	req.Header.Set("Content-Type", "application/xml")
+	resp, err := http.DefaultClient.Do(req)
+	assert.NoError(err)
+	assert.Equal(http.StatusUnsupportedMediaType, resp.StatusCode)
+}
+
+func TestIntegration_MissingContentType(t *testing.T) {
+	assert := assert.New(t)
+	assert.Eventually(healthCheckCondition, 5*time.Second, 100*time.Millisecond)
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"http://localhost:8080/gen",
+		strings.NewReader(`{}`),
+	)
+	assert.NoError(err)
+
+	//req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	assert.NoError(err)
+	assert.Equal(http.StatusUnsupportedMediaType, resp.StatusCode)
 }
